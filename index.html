@@ -1,35 +1,228 @@
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SLB Loading Screen</title>
-
 <style>
-html,body{
-    margin:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-}
-
-body{
-    background:url("background.png") no-repeat center center;
+  :root{
+    --ink:#f3ece0;
+    --dim:#b9ad9a;
+    --ember:#f08a2c;
+    --ember-hi:#ffc27a;
+    --shade:rgba(10,8,14,.62);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden}
+  body{
+    background:#0b0910 url("background.png") no-repeat center center;
     background-size:cover;
-}
+    color:var(--ink);
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  /* voile sombre pour garder le texte lisible sur n'importe quel fond */
+  body::before{
+    content:"";position:fixed;inset:0;
+    background:radial-gradient(ellipse at 50% 45%,rgba(10,8,14,.15),rgba(10,8,14,.78));
+  }
+  main{
+    position:relative;height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2.4vh;padding:4vh 6vw;text-align:center;
+  }
 
-audio{
-    display:none;
-}
+  /* logo qui tourne sur son axe vertical */
+  .logo-wrap{perspective:900px;transform-style:preserve-3d;width:clamp(120px,20vh,220px);height:clamp(120px,20vh,220px);position:relative}
+  .logo-wrap::after{ /* halo au sol */
+    content:"";position:absolute;left:10%;right:10%;bottom:-14%;height:12%;
+    background:radial-gradient(ellipse,rgba(240,138,44,.45),transparent 70%);
+    filter:blur(4px);
+  }
+  .logo{
+    width:100%;height:100%;object-fit:contain;
+    animation:spin 4.5s linear infinite;
+    filter:drop-shadow(0 0 18px rgba(240,138,44,.45));
+  }
+  .logo-fallback{
+    display:none;width:100%;height:100%;align-items:center;justify-content:center;
+    font-size:clamp(48px,9vh,96px);font-weight:800;letter-spacing:.06em;
+    animation:spin 4.5s linear infinite;color:var(--ember-hi);
+  }
+  @keyframes spin{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+
+  /* planète en orbite : passe devant puis derrière le logo */
+  .tilt{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(72deg) rotateY(-12deg);pointer-events:none}
+  .orbit{
+    position:absolute;inset:-48%;border-radius:50%;
+    border:1px dashed rgba(243,236,224,.28);
+    transform-style:preserve-3d;
+    animation:orbit 8s linear infinite;
+  }
+  .planet{
+    --p:clamp(16px,3.2vh,32px);
+    position:absolute;left:50%;top:0;width:var(--p);height:var(--p);
+    margin:calc(var(--p) / -2) 0 0 calc(var(--p) / -2);border-radius:50%;
+    background:radial-gradient(circle at 32% 30%,#ffe3b8 0%,#f08a2c 38%,#8a3a12 72%,#2a0f06 100%);
+    box-shadow:0 0 14px rgba(240,138,44,.55);
+    animation:planet 8s linear infinite;
+  }
+  @keyframes orbit{from{transform:rotateZ(0)}to{transform:rotateZ(360deg)}}
+  /* contre-rotation : la planète reste face à l’écran pendant qu’elle tourne */
+  @keyframes planet{from{transform:rotateZ(0) rotateX(-72deg)}to{transform:rotateZ(-360deg) rotateX(-72deg)}}
+
+  h1{margin:0;font-size:clamp(22px,4.2vh,40px);font-weight:700;letter-spacing:.02em}
+  .map{margin:0;color:var(--dim);font-size:clamp(13px,2.2vh,18px)}
+
+  /* barre de chargement */
+  .bar-block{width:min(640px,86vw);background:var(--shade);padding:18px 22px 16px;border-radius:10px;
+    border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(3px)}
+  .bar-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:15px}
+  .status{color:var(--ink);text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pct{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ember-hi);margin-left:16px}
+  .track{height:12px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
+  .fill{
+    height:100%;width:0%;border-radius:6px;
+    background:linear-gradient(90deg,var(--ember),var(--ember-hi));
+    box-shadow:0 0 14px rgba(240,138,44,.7);
+    transition:width .35s ease-out;
+  }
+  .file{margin-top:10px;font-size:12.5px;color:var(--dim);text-align:left;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:1.3em}
+
+  /* contrôle du volume de la musique */
+  .vol{
+    position:fixed;left:24px;bottom:22px;display:flex;align-items:center;gap:12px;
+    background:var(--shade);padding:10px 16px 10px 12px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(3px);
+  }
+  .vol button{
+    background:none;border:0;padding:4px;cursor:pointer;color:var(--ink);display:flex;
+  }
+  .vol button:hover{color:var(--ember-hi)}
+  .vol button:focus-visible,.vol input:focus-visible{outline:2px solid var(--ember-hi);outline-offset:3px}
+  .vol svg{width:22px;height:22px;fill:currentColor}
+  .vol input[type=range]{
+    -webkit-appearance:none;appearance:none;width:140px;height:6px;border-radius:3px;cursor:pointer;
+    background:linear-gradient(90deg,var(--ember) var(--v,30%),rgba(255,255,255,.18) var(--v,30%));
+  }
+  .vol input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--ember-hi);border:0;box-shadow:0 0 8px rgba(240,138,44,.8);
+  }
+  .vol input[type=range]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;background:var(--ember-hi);border:0;
+  }
+  .vol .pv{font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right;font-size:14px;color:var(--dim)}
+
+  @media (prefers-reduced-motion:reduce){
+    .logo,.logo-fallback{animation-duration:14s}
+    .orbit,.planet{animation-duration:30s}
+  }
 </style>
-
 </head>
-
 <body>
+<main>
+  <div class="logo-wrap">
+    <img class="logo" src="logo.png" alt="Logo SLB"
+         onerror="this.style.display='none';document.getElementById('fb').style.display='flex'">
+    <div class="logo-fallback" id="fb">SLB</div>
+    <div class="tilt"><div class="orbit"><div class="planet"></div></div></div>
+  </div>
 
-    
+  <div>
+    <h1 id="server">Bienvenue sur SLB</h1>
+    <p class="map" id="map">Préparation de la connexion…</p>
+  </div>
 
+  <div class="bar-block">
+    <div class="bar-top">
+      <span class="status" id="status">Connexion au serveur…</span>
+      <span class="pct" id="pct">0 %</span>
+    </div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <div class="file" id="file"></div>
+  </div>
+</main>
+
+<audio id="music" src="music.mp3" loop preload="auto"></audio>
+
+<div class="vol">
+  <button id="mute" type="button" aria-label="Couper ou remettre le son">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path id="ico" d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+  </button>
+  <input id="slider" type="range" min="0" max="100" step="1" value="30" aria-label="Volume de la musique">
+  <span class="pv" id="pv">30 %</span>
+</div>
+
+<script>
+  var total = 0, needed = 0, live = false;
+  var $ = function(id){ return document.getElementById(id); };
+
+  function render(){
+    var pct = total > 0 ? Math.round((total - needed) / total * 100) : 0;
+    pct = Math.max(0, Math.min(100, pct));
+    $("fill").style.width = pct + "%";
+    $("pct").textContent = pct + " %";
+  }
+
+  /* Fonctions appelées automatiquement par Garry’s Mod pendant le chargement */
+  function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode){
+    live = true;
+    if (servername) $("server").textContent = servername;
+    if (mapname) $("map").textContent = "Map : " + mapname + (maxplayers ? " · " + maxplayers + " joueurs max" : "");
+  }
+  function SetFilesTotal(t){ live = true; total = Number(t) || 0; render(); }
+  function SetFilesNeeded(n){ live = true; needed = Number(n) || 0; render(); }
+  function DownloadingFile(name){
+    live = true;
+    $("file").textContent = "Téléchargement : " + String(name).split("/").pop();
+  }
+  function SetStatusChanged(status){
+    live = true;
+    $("status").textContent = status;
+    if (/sending client info|workshop|lua|sound|sent/i.test(status)) { /* statut texte seulement */ }
+  }
+
+  /* Musique + volume */
+  var music = $("music"), slider = $("slider"), lastVol = 30;
+  var ICO_ON  = "M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z";
+  var ICO_OFF = "M3 9v6h4l5 4V5L7 9H3zm13.6 3 2.4-2.4-1.4-1.4-2.4 2.4-2.4-2.4-1.4 1.4 2.4 2.4-2.4 2.4 1.4 1.4 2.4-2.4 2.4 2.4 1.4-1.4-2.4-2.4z";
+
+  function setVolume(v){
+    v = Math.max(0, Math.min(100, Number(v) || 0));
+    music.volume = v / 100;
+    slider.value = v;
+    slider.style.setProperty("--v", v + "%");
+    $("pv").textContent = v + " %";
+    $("ico").setAttribute("d", v === 0 ? ICO_OFF : ICO_ON);
+    if (v > 0) lastVol = v;
+    try { localStorage.setItem("slb_volume", v); } catch(e) {}
+  }
+  function tryPlay(){ var p = music.play(); if (p && p.catch) p.catch(function(){}); }
+
+  var saved = 30;
+  try { var s = localStorage.getItem("slb_volume"); if (s !== null) saved = Number(s); } catch(e) {}
+  setVolume(saved);
+  tryPlay();
+
+  slider.addEventListener("input", function(){ setVolume(slider.value); tryPlay(); });
+  $("mute").addEventListener("click", function(){ setVolume(music.volume > 0 ? 0 : lastVol); tryPlay(); });
+  /* si le navigateur bloque la lecture auto, le premier clic la lance */
+  document.addEventListener("click", tryPlay, { once: true });
+
+  /* Aperçu hors du jeu : si GMod n’appelle rien, on simule un chargement pour tester le rendu */
+  setTimeout(function(){
+    if (live) return;
+    total = 120; needed = 120;
+    var steps = ["Téléchargement des ressources", "Montage des addons", "Chargement de la map", "Envoi des infos client"];
+    var t = setInterval(function(){
+      needed = Math.max(0, needed - 2);
+      $("status").textContent = steps[Math.min(3, Math.floor((total - needed) / total * 4))];
+      $("file").textContent = "Téléchargement : exemple_" + (total - needed) + ".vtf";
+      render();
+      if (needed === 0) clearInterval(t);
+    }, 120);
+  }, 1500);
+</script>
 </body>
 </html>
-```
-
