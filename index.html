@@ -103,7 +103,7 @@
   .vol svg{width:22px;height:22px;fill:currentColor}
   .vol input[type=range]{
     -webkit-appearance:none;appearance:none;width:140px;height:6px;border-radius:3px;cursor:pointer;
-    background:linear-gradient(90deg,var(--ember) var(--v,30%),rgba(255,255,255,.18) var(--v,30%));
+    background:linear-gradient(90deg,var(--ember) var(--v,10%),rgba(255,255,255,.18) var(--v,10%));
   }
   .vol input[type=range]::-webkit-slider-thumb{
     -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
@@ -150,8 +150,8 @@
   <button id="mute" type="button" aria-label="Couper ou remettre le son">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path id="ico" d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
   </button>
-  <input id="slider" type="range" min="0" max="100" step="1" value="30" aria-label="Volume de la musique">
-  <span class="pv" id="pv">30 %</span>
+  <input id="slider" type="range" min="0" max="100" step="1" value="10" aria-label="Volume de la musique">
+  <span class="pv" id="pv">10 %</span>
 </div>
 
 <script>
@@ -184,7 +184,7 @@
   }
 
   /* Musique + volume */
-  var music = $("music"), slider = $("slider"), lastVol = 30;
+  var music = $("music"), slider = $("slider"), lastVol = 10;
   var ICO_ON  = "M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z";
   var ICO_OFF = "M3 9v6h4l5 4V5L7 9H3zm13.6 3 2.4-2.4-1.4-1.4-2.4 2.4-2.4-2.4-1.4 1.4 2.4 2.4-2.4 2.4 1.4 1.4 2.4-2.4 2.4 2.4 1.4-1.4-2.4-2.4z";
 
@@ -196,12 +196,12 @@
     $("pv").textContent = v + " %";
     $("ico").setAttribute("d", v === 0 ? ICO_OFF : ICO_ON);
     if (v > 0) lastVol = v;
-    try { localStorage.setItem("slb_volume", v); } catch(e) {}
+    try { localStorage.setItem("slb_volume_v2", v); } catch(e) {}
   }
   function tryPlay(){ var p = music.play(); if (p && p.catch) p.catch(function(){}); }
 
-  var saved = 30;
-  try { var s = localStorage.getItem("slb_volume"); if (s !== null) saved = Number(s); } catch(e) {}
+  var saved = 10;
+  try { var s = localStorage.getItem("slb_volume_v2"); if (s !== null) saved = Number(s); } catch(e) {}
   setVolume(saved);
   tryPlay();
 
@@ -209,6 +209,14 @@
   $("mute").addEventListener("click", function(){ setVolume(music.volume > 0 ? 0 : lastVol); tryPlay(); });
   /* si le navigateur bloque la lecture auto, le premier clic la lance */
   document.addEventListener("click", tryPlay, { once: true });
+
+  /* clavier : flèches ou +/- pour régler, M pour couper (utile quand la souris n’est pas disponible) */
+  document.addEventListener("keydown", function(e){
+    var cur = Math.round(music.volume * 100);
+    if (e.key === "ArrowUp" || e.key === "+") setVolume(cur + 5);
+    else if (e.key === "ArrowDown" || e.key === "-") setVolume(cur - 5);
+    else if (e.key === "m" || e.key === "M") setVolume(cur > 0 ? 0 : lastVol);
+  });
 
   /* Aperçu hors du jeu : si GMod n’appelle rien, on simule un chargement pour tester le rendu */
   setTimeout(function(){
